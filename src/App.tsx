@@ -1,15 +1,15 @@
 import HeaderRow from './components/HeaderRow'
+import LeftSidebar from './components/LeftSidebar'
+import RightPanel from './components/RightPanel'
 
 function App() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="h-screen overflow-y-hidden bg-black text-white flex flex-col">
       <HeaderRow />
-      <main className="p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">身材管理系统</h2>
-          <p className="text-gray-400">Dashboard 正在构建中...</p>
-        </div>
-      </main>
+      <div className="flex flex-1 overflow-y-hidden h-0">
+        <LeftSidebar />
+        <RightPanel />
+      </div>
     </div>
   )
 }
