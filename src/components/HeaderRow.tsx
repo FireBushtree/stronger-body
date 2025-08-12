@@ -1,7 +1,11 @@
 import React from 'react';
 import { UserIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
-const HeaderRow: React.FC = () => {
+interface HeaderRowProps {
+  onUserInfoClick?: () => void;
+}
+
+const HeaderRow: React.FC<HeaderRowProps> = ({ onUserInfoClick }) => {
   const formatDate = () => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = {
@@ -40,6 +44,7 @@ const HeaderRow: React.FC = () => {
         
         <div className="flex items-center space-x-3">
           <button 
+            onClick={onUserInfoClick}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
             title="修改用户信息"
           >
