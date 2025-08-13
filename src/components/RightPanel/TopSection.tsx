@@ -51,7 +51,7 @@ const TopSection: React.FC<TopSectionProps> = ({ isLoadingNutrition = false }) =
 
   useEffect(() => {
     loadNutritionData();
-  }, []);
+  }, [isLoadingNutrition]);
 
   // 处理保存饮食记录后的刷新
   const handleFoodIntakeSave = () => {

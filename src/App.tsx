@@ -17,7 +17,6 @@ const AppContent: React.FC = () => {
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlanData | null>(null);
   const { showLoading, hideLoading } = useLoading();
   const { userInfo, updateUserInfo, isUserInfoComplete } = useUserInfo();
-  const [rightPanelKey, setRightPanelKey] = useState(0);
   const [isLoadingDietPlan, setIsLoadingDietPlan] = useState(false);
   const [isLoadingWorkoutPlan, setIsLoadingWorkoutPlan] = useState(false);
 
@@ -56,7 +55,7 @@ const AppContent: React.FC = () => {
         try {
           setIsLoadingDietPlan(true);
           const dietResponse = await callDietPlanAgent(newUserInfo);
-          
+
           if (dietResponse && dietResponse.text) {
             try {
               const jsonMatch = dietResponse.text.match(/\{[\s\S]*\}/);
@@ -84,7 +83,7 @@ const AppContent: React.FC = () => {
         try {
           setIsLoadingWorkoutPlan(true);
           const workoutResponse = await callWorkoutPlanAgent(newUserInfo);
-          
+
           if (workoutResponse && workoutResponse.text) {
             try {
               const jsonMatch = workoutResponse.text.match(/\{[\s\S]*\}/);
@@ -110,8 +109,6 @@ const AppContent: React.FC = () => {
       // 并发执行但不等待
       callDietPlan();
       callWorkoutPlan();
-      
-      setRightPanelKey((prev) => prev + 1);
 
       setShowUserInfoModal(false);
     } else {
@@ -136,14 +133,13 @@ const AppContent: React.FC = () => {
     <div className="h-screen overflow-y-hidden bg-black text-white flex flex-col">
       <HeaderRow onUserInfoClick={() => setShowUserInfoModal(true)} />
       <div className="flex flex-1 overflow-y-hidden h-0">
-        <LeftSidebar 
-          dietPlan={dietPlan} 
-          workoutPlan={workoutPlan} 
+        <LeftSidebar
+          dietPlan={dietPlan}
+          workoutPlan={workoutPlan}
           isLoadingDietPlan={isLoadingDietPlan}
           isLoadingWorkoutPlan={isLoadingWorkoutPlan}
         />
-        <RightPanel 
-          key={rightPanelKey} 
+        <RightPanel
           isLoadingNutrition={isLoadingDietPlan}
         />
       </div>
