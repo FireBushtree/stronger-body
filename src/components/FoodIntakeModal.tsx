@@ -22,10 +22,10 @@ interface NutritionCalculationResult {
     };
   }>;
   totalNutrition: {
-    calories: string;
-    protein: string;
-    carbs: string;
-    fat: string;
+    calories: string | number;
+    protein: string | number;
+    carbs: string | number;
+    fat: string | number;
   };
   analysis: string;
 }
@@ -91,12 +91,20 @@ const FoodIntakeModal: React.FC<FoodIntakeModalProps> = ({ isOpen, onClose, onSa
       const today = new Date().toISOString().split('T')[0];
       const { totalNutrition } = calculationResult;
 
+      // 处理AI可能返回number类型的情况
+      const normalizedNutrition = {
+        calories: typeof totalNutrition.calories === 'number' ? totalNutrition.calories.toString() : totalNutrition.calories,
+        protein: typeof totalNutrition.protein === 'number' ? totalNutrition.protein.toString() : totalNutrition.protein,
+        fat: typeof totalNutrition.fat === 'number' ? totalNutrition.fat.toString() : totalNutrition.fat,
+        carbs: typeof totalNutrition.carbs === 'number' ? totalNutrition.carbs.toString() : totalNutrition.carbs,
+      };
+
       const success = NutritionTrendDB.addRecord({
         date: today,
-        calories: parseInt(totalNutrition.calories.replace(/[^\d]/g, '')) || 0,
-        protein: parseFloat(totalNutrition.protein.replace(/[^\d.]/g, '')) || 0,
-        fat: parseFloat(totalNutrition.fat.replace(/[^\d.]/g, '')) || 0,
-        carbohydrates: parseFloat(totalNutrition.carbs.replace(/[^\d.]/g, '')) || 0,
+        calories: parseInt(normalizedNutrition.calories.toString().replace(/[^\d]/g, '')) || 0,
+        protein: parseFloat(normalizedNutrition.protein.toString().replace(/[^\d.]/g, '')) || 0,
+        fat: parseFloat(normalizedNutrition.fat.toString().replace(/[^\d.]/g, '')) || 0,
+        carbohydrates: parseFloat(normalizedNutrition.carbs.toString().replace(/[^\d.]/g, '')) || 0,
         foods: calculationResult.foods,
         originalInput: foodInput,
         analysis: calculationResult.analysis,
@@ -197,19 +205,35 @@ const FoodIntakeModal: React.FC<FoodIntakeModalProps> = ({ isOpen, onClose, onSa
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                   <div className="text-orange-400 text-sm">总卡路里</div>
-                  <div className="text-white text-xl font-bold">{calculationResult.totalNutrition.calories}</div>
+                  <div className="text-white text-xl font-bold">
+                    {typeof calculationResult.totalNutrition.calories === 'number' 
+                      ? calculationResult.totalNutrition.calories 
+                      : calculationResult.totalNutrition.calories}
+                  </div>
                 </div>
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                   <div className="text-blue-400 text-sm">蛋白质</div>
-                  <div className="text-white text-xl font-bold">{calculationResult.totalNutrition.protein}</div>
+                  <div className="text-white text-xl font-bold">
+                    {typeof calculationResult.totalNutrition.protein === 'number' 
+                      ? calculationResult.totalNutrition.protein 
+                      : calculationResult.totalNutrition.protein}
+                  </div>
                 </div>
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
                   <div className="text-yellow-400 text-sm">脂肪</div>
-                  <div className="text-white text-xl font-bold">{calculationResult.totalNutrition.fat}</div>
+                  <div className="text-white text-xl font-bold">
+                    {typeof calculationResult.totalNutrition.fat === 'number' 
+                      ? calculationResult.totalNutrition.fat 
+                      : calculationResult.totalNutrition.fat}
+                  </div>
                 </div>
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
                   <div className="text-green-400 text-sm">碳水化合物</div>
-                  <div className="text-white text-xl font-bold">{calculationResult.totalNutrition.carbs}</div>
+                  <div className="text-white text-xl font-bold">
+                    {typeof calculationResult.totalNutrition.carbs === 'number' 
+                      ? calculationResult.totalNutrition.carbs 
+                      : calculationResult.totalNutrition.carbs}
+                  </div>
                 </div>
               </div>
 
