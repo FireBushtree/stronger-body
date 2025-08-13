@@ -1,4 +1,4 @@
-import { WeightTrendDB, UserBodyInfoDB } from '../../utils/db';
+import { WeightTrendDB, UserBodyInfoDB, NutritionTrendDB } from '../../utils/db';
 
 // 生成体重数据的辅助函数
 export const generateWeightData = () => {
@@ -148,23 +148,41 @@ export const generateNutritionTrendData = () => {
   const carbData = [];
   const today = new Date();
 
+  // 获取最近7天的日期范围
+  const endDate = today.toISOString().split('T')[0];
+  const startDate = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  // 获取真实的营养数据
+  const nutritionRecords = NutritionTrendDB.getDateRange(startDate, endDate);
+  
+  // 创建日期到记录的映射
+  const recordMap = new Map();
+  nutritionRecords.forEach(record => {
+    recordMap.set(record.date, record);
+  });
+
+  // 生成最近7天的数据
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(today.getDate() - i);
+    const dateString = date.toISOString().split('T')[0];
+    
     dates.push(date.toLocaleDateString('zh-CN', { weekday: 'short', month: 'short', day: 'numeric' }));
 
-    // 模拟营养数据，基础值 + 随机波动
-    const caloriesBase = 1600;
-    const proteinBase = 100;
-    const fatBase = 50;
-    const carbBase = 200;
-
-    const dailyVariation = Math.sin(i / 3) * 0.15 + (Math.random() - 0.5) * 0.2;
-
-    caloriesData.push(Math.round(caloriesBase + caloriesBase * dailyVariation));
-    proteinData.push(Math.round(proteinBase + proteinBase * dailyVariation));
-    fatData.push(Math.round(fatBase + fatBase * dailyVariation));
-    carbData.push(Math.round(carbBase + carbBase * dailyVariation));
+    // 使用真实数据或0（如果没有记录）
+    const record = recordMap.get(dateString);
+    if (record) {
+      caloriesData.push(record.calories);
+      proteinData.push(Math.round(record.protein));
+      fatData.push(Math.round(record.fat));
+      carbData.push(Math.round(record.carbohydrates));
+    } else {
+      // 没有记录的日期显示0
+      caloriesData.push(0);
+      proteinData.push(0);
+      fatData.push(0);
+      carbData.push(0);
+    }
   }
 
   return { dates, caloriesData, proteinData, fatData, carbData };

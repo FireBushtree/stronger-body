@@ -22,13 +22,14 @@ const TopSection: React.FC = () => {
   const [actualIntake, setActualIntake] = useState<NutritionRecord | null>(null);
   const [showFoodIntakeModal, setShowFoodIntakeModal] = useState(false);
   const [showFoodRecordsModal, setShowFoodRecordsModal] = useState(false);
+  const [chartKey, setChartKey] = useState(0);
 
   // 加载数据的函数
   const loadNutritionData = () => {
     // 加载AI饮食计划
     const todayPlan = DietPlanDB.getTodayPlan();
     setDietPlan(todayPlan);
-    
+
     // 加载用户实际摄入数据
     const todayIntake = NutritionTrendDB.getTodayRecord();
     setActualIntake(todayIntake);
@@ -42,6 +43,8 @@ const TopSection: React.FC = () => {
   const handleFoodIntakeSave = () => {
     // 重新加载营养数据以显示最新的用户输入
     loadNutritionData();
+    // 强制图表重新渲染
+    setChartKey(prev => prev + 1);
   };
 
   // 计算目标营养值 (基于用户身体信息的简单估算)
@@ -53,7 +56,7 @@ const TopSection: React.FC = () => {
 
     // 简单的基础代谢计算和营养目标
     const { currentWeight, height, age, gender, weeklyWorkIntensity } = userInfo;
-    
+
     // 基础代谢率 (BMR) 计算
     let bmr = 0;
     if (gender === 'male') {
@@ -71,7 +74,7 @@ const TopSection: React.FC = () => {
     };
 
     const totalCalories = Math.round(bmr * activityFactors[weeklyWorkIntensity]);
-    
+
     return {
       calories: totalCalories,
       protein: Math.round(currentWeight * 1.8), // 1.8g/kg 体重
@@ -98,7 +101,7 @@ const TopSection: React.FC = () => {
     // 如果没有用户数据，使用AI饮食计划数据
     if (dietPlan && dietPlan.summary) {
       const { totalDailyCalories, dailyNutrients } = dietPlan.summary;
-      
+
       return {
         calories: parseInt(totalDailyCalories.replace(/[^\d]/g, '')) || 0,
         protein: parseFloat(dailyNutrients.protein.replace(/[^\d.]/g, '')) || 0,
@@ -168,7 +171,7 @@ const TopSection: React.FC = () => {
   return (
     <div className="flex-1 h-0 flex flex-col">
       {/* 营养卡片区域 */}
-      <div className="flex-1 h-0 bg-gray-800 border-b border-gray-700 p-6">
+      <div className="flex-1 h-0 p-4">
         {/* 标题栏 */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-3">
@@ -201,7 +204,7 @@ const TopSection: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         {currentNutrition.source !== 'none' ? (
           <div className="grid grid-cols-4 gap-4 flex-1">
             {nutritionData.map((item, index) => {
@@ -256,14 +259,13 @@ const TopSection: React.FC = () => {
       </div>
 
       {/* 营养摄入趋势图 */}
-      <div className="h-0 flex-1 mt-6 bg-gray-900 rounded-lg flex flex-col">
-        <div className="flex-1">
-          <ReactECharts
-            option={trendChartOption}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'canvas' }}
-          />
-        </div>
+      <div className="h-0 flex-1 bg-gray-900 rounded-lg flex flex-col">
+        <ReactECharts
+          key={chartKey}
+          option={trendChartOption}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+        />
       </div>
 
       {/* 饮食摄入弹窗 */}
