@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { XMarkIcon, PaperAirplaneIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { UserBodyInfoDB } from '../utils/db';
 import client from '../utils/mastraClient';
 
@@ -28,6 +29,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -52,6 +54,17 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     setInputMessage('');
     setIsLoading(true);
 
+    // 创建一个空的助手消息用于流式更新
+    const assistantMessageId = (Date.now() + 1).toString();
+    setStreamingMessageId(assistantMessageId);
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      content: '',
+      role: 'assistant',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+
     try {
       // 获取用户信息用于上下文
       const userInfo = UserBodyInfoDB.get();
@@ -61,31 +74,47 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
         contextMessage = `用户信息：身高${userInfo.height}cm，体重${userInfo.currentWeight}kg，年龄${userInfo.age}岁，性别${userInfo.gender === 'male' ? '男' : '女'}，工作强度${userInfo.weeklyWorkIntensity}${userInfo.targetWeight ? `，目标体重${userInfo.targetWeight}kg` : ''}。\n\n用户问题：${contextMessage}`;
       }
 
+      // 使用 mastraClient 的 stream API
       const agent = client.getAgent("bodyAgent");
-      const response = await agent.generate({
+      const stream = await agent.stream({
         messages: [{ role: "user", content: contextMessage }],
       });
 
-      if (response && response.text) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: response.text,
-          role: 'assistant',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
+      let accumulatedText = '';
+
+      // 使用 mastraClient 的 processDataStream 方法
+      await stream.processDataStream({
+        onTextPart: (text) => {
+          accumulatedText += text;
+
+          // 实时更新消息内容
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: accumulatedText }
+              : msg
+          ));
+        },
+      });
+
+      // 如果没有收到任何内容，显示错误信息
+      if (!accumulatedText) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: '收到了空的响应，请重试。' }
+            : msg
+        ));
       }
+
     } catch (error) {
       console.error('发送消息失败:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: '抱歉，我现在无法回复您的消息，请稍后再试。',
-        role: 'assistant',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId
+          ? { ...msg, content: '抱歉，我现在无法回复您的消息，请稍后再试。' }
+          : msg
+      ));
     } finally {
       setIsLoading(false);
+      setStreamingMessageId(null);
     }
   };
 
@@ -137,7 +166,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                 }`}
               >
                 <div className="prose prose-sm prose-invert max-w-none prose-headings:text-white prose-p:text-gray-100 prose-strong:text-white prose-code:text-blue-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-table:text-gray-100 prose-table:border-collapse prose-table:border prose-table:border-gray-600 prose-thead:border-gray-600 prose-tbody:border-gray-600 prose-th:border prose-th:border-gray-600 prose-th:bg-gray-700 prose-th:text-white prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-gray-600 prose-td:px-3 prose-td:py-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                  {streamingMessageId === message.id && (
+                    <span className="inline-block w-2 h-5 bg-blue-400 animate-pulse ml-1 align-bottom"></span>
+                  )}
                 </div>
                 <div
                   className={`text-xs mt-1 ${
@@ -149,21 +186,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
           ))}
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-700 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span className="text-gray-400 text-sm">AI正在思考中...</span>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div ref={messagesEndRef} />
         </div>
