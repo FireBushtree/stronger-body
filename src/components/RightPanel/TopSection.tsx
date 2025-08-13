@@ -9,8 +9,8 @@ import {
 } from "@heroicons/react/24/outline";
 import ReactECharts from "echarts-for-react";
 import { getNutritionTrendChartOption } from "./helper";
-import { UserBodyInfoDB, NutritionTrendDB } from "../../utils/db";
-import type { NutritionRecord } from "../../utils/db";
+import { UserBodyInfoDB, NutritionTrendDB, DietPlanDB } from "../../utils/db";
+import type { NutritionRecord, DietPlanData } from "../../utils/db";
 import FoodIntakeModal from "../FoodIntakeModal";
 import FoodRecordsModal from "../FoodRecordsModal";
 
@@ -28,6 +28,7 @@ const TopSection: React.FC = () => {
   const [actualIntake, setActualIntake] = useState<NutritionRecord | null>(
     null
   );
+  const [dietPlan, setDietPlan] = useState<DietPlanData | null>(null);
   const [showFoodIntakeModal, setShowFoodIntakeModal] = useState(false);
   const [showFoodRecordsModal, setShowFoodRecordsModal] = useState(false);
   const [chartKey, setChartKey] = useState(0);
@@ -37,6 +38,10 @@ const TopSection: React.FC = () => {
     // 加载用户实际摄入数据
     const todayIntake = NutritionTrendDB.getTodayRecord();
     setActualIntake(todayIntake);
+    
+    // 加载AI饮食计划（用于目标值）
+    const todayPlan = DietPlanDB.getTodayPlan();
+    setDietPlan(todayPlan);
   };
 
   useEffect(() => {
@@ -51,8 +56,21 @@ const TopSection: React.FC = () => {
     setChartKey((prev) => prev + 1);
   };
 
-  // 计算目标营养值 (基于用户身体信息的简单估算)
+  // 获取目标营养值 (优先从AI饮食计划获取)
   const calculateTargetNutrition = () => {
+    // 优先使用AI饮食计划中的目标值
+    if (dietPlan && dietPlan.summary) {
+      const { totalDailyCalories, dailyNutrients } = dietPlan.summary;
+      
+      return {
+        calories: parseInt(totalDailyCalories.replace(/[^\d]/g, '')) || 0,
+        protein: parseFloat(dailyNutrients.protein.replace(/[^\d.]/g, '')) || 0,
+        fat: parseFloat(dailyNutrients.fat.replace(/[^\d.]/g, '')) || 0,
+        carbs: parseFloat(dailyNutrients.carbs.replace(/[^\d.]/g, '')) || 0,
+      };
+    }
+
+    // 如果没有AI计划，基于用户身体信息的简单估算作为后备
     const userInfo = UserBodyInfoDB.get();
     if (!userInfo) {
       return { calories: 2000, protein: 120, fat: 65, carbs: 250 };
