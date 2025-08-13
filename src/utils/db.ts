@@ -21,6 +21,17 @@ export interface WeightRecord {
 }
 
 // 营养摄入记录数据结构
+export interface FoodItem {
+  name: string;
+  amount: string;
+  calories: string;
+  nutrients: {
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
+}
+
 export interface NutritionRecord {
   date: string; // 日期 YYYY-MM-DD
   calories: number; // 卡路里 (kcal)
@@ -28,6 +39,9 @@ export interface NutritionRecord {
   fat: number; // 脂肪 (g)
   carbohydrates: number; // 碳水化合物 (g)
   timestamp: number; // 时间戳
+  foods?: FoodItem[]; // 具体食物列表（可选，为了向后兼容）
+  originalInput?: string; // 原始输入文本（可选）
+  analysis?: string; // AI分析结果（可选）
 }
 
 // 体重趋势数据 (使用Map结构)
