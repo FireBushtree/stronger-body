@@ -40,7 +40,8 @@ export type NutritionTrendMap = Map<string, NutritionRecord>;
 const STORAGE_KEYS = {
   USER_BODY_INFO: 'stronger-body-user-info',
   WEIGHT_TREND: 'stronger-body-weight-trend',
-  NUTRITION_TREND: 'stronger-body-nutrition-trend'
+  NUTRITION_TREND: 'stronger-body-nutrition-trend',
+  DIET_PLAN: 'stronger-body-diet-plan'
 } as const;
 
 // 工具函数：Map与JSON互相转换
@@ -256,5 +257,94 @@ export class NutritionTrendDB {
     const today = new Date().toISOString().split('T')[0];
     const trendMap = NutritionTrendDB.get();
     return trendMap.get(today) || null;
+  }
+}
+
+// 饮食计划数据结构 (导入类型)
+export interface DietPlanFood {
+  name: string;
+  amount: string;
+  calories: string;
+  nutrients: {
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
+}
+
+export interface DietPlanMeal {
+  time: string;
+  foods: DietPlanFood[];
+  totalCalories: string;
+  notes: string;
+}
+
+export interface DietPlanData {
+  breakfast: DietPlanMeal;
+  lunch: DietPlanMeal;
+  dinner: DietPlanMeal;
+  summary: {
+    totalDailyCalories: string;
+    dailyNutrients: {
+      protein: string;
+      carbs: string;
+      fat: string;
+    };
+    recommendations: string[];
+  };
+  createdAt: string;
+  date: string;
+}
+
+// 饮食计划相关方法
+export class DietPlanDB {
+  // 获取今日饮食计划
+  static getTodayPlan(): DietPlanData | null {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const data = localStorage.getItem(STORAGE_KEYS.DIET_PLAN);
+      if (!data) return null;
+
+      const dietPlan: DietPlanData = JSON.parse(data);
+      // 检查是否是今日的计划
+      if (dietPlan.date === today) {
+        return dietPlan;
+      }
+      return null;
+    } catch (error) {
+      console.error('获取今日饮食计划失败:', error);
+      return null;
+    }
+  }
+
+  // 保存今日饮食计划
+  static setTodayPlan(planData: Omit<DietPlanData, 'createdAt' | 'date'>): boolean {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+
+      const dietPlan: DietPlanData = {
+        ...planData,
+        date: today,
+        createdAt: now
+      };
+
+      localStorage.setItem(STORAGE_KEYS.DIET_PLAN, JSON.stringify(dietPlan));
+      return true;
+    } catch (error) {
+      console.error('保存今日饮食计划失败:', error);
+      return false;
+    }
+  }
+
+  // 清除今日饮食计划
+  static clearTodayPlan(): boolean {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.DIET_PLAN);
+      return true;
+    } catch (error) {
+      console.error('清除今日饮食计划失败:', error);
+      return false;
+    }
   }
 }

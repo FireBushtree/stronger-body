@@ -5,12 +5,13 @@ import RightPanel from './components/RightPanel'
 import UserInfoModal from './components/UserInfoModal'
 import GlobalLoading from './components/GlobalLoading'
 import { useLoading } from './contexts/LoadingContext'
-import { UserBodyInfoDB, WeightTrendDB } from './utils/db'
-import type { UserBodyInfo } from './utils/db'
-import { callBodyAgent } from './utils/mastraClient'
+import { UserBodyInfoDB, WeightTrendDB, DietPlanDB } from './utils/db'
+import type { UserBodyInfo, DietPlanData } from './utils/db'
+import { callDietPlanAgent } from './utils/mastraClient'
 
 function App() {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
+  const [dietPlan, setDietPlan] = useState<DietPlanData | null>(null);
   const { showLoading, hideLoading } = useLoading()
 
   useEffect(() => {
@@ -21,6 +22,10 @@ function App() {
     if (!userInfo || !isUserInfoComplete(userInfo)) {
       setShowUserInfoModal(true);
     }
+
+    // 加载今日饮食计划
+    const todayPlan = DietPlanDB.getTodayPlan();
+    setDietPlan(todayPlan);
   }, []);
 
   // 检查用户信息是否完整
@@ -55,9 +60,28 @@ function App() {
       try {
         const fullUserInfo = UserBodyInfoDB.get();
         if (fullUserInfo) {
-          showLoading()
-          await callBodyAgent(fullUserInfo);
-          console.log('Body Agent called successfully with user info');
+          showLoading();
+          const response = await callDietPlanAgent(fullUserInfo);
+          
+          // 解析AI返回的饮食计划
+          if (response && response.text) {
+            try {
+              // 尝试从响应中提取JSON
+              const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const planData = JSON.parse(jsonMatch[0]);
+                
+                // 保存到数据库
+                const saved = DietPlanDB.setTodayPlan(planData);
+                if (saved) {
+                  setDietPlan(DietPlanDB.getTodayPlan());
+                  console.log('饮食计划生成并保存成功');
+                }
+              }
+            } catch (parseError) {
+              console.error('解析饮食计划失败:', parseError);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to call Body Agent:', error);
@@ -90,7 +114,7 @@ function App() {
     <div className="h-screen overflow-y-hidden bg-black text-white flex flex-col">
       <HeaderRow onUserInfoClick={() => setShowUserInfoModal(true)} />
       <div className="flex flex-1 overflow-y-hidden h-0">
-        <LeftSidebar />
+        <LeftSidebar dietPlan={dietPlan} />
         <RightPanel />
       </div>
 
