@@ -3,8 +3,7 @@ import { generateQuestion } from './questionTemplates';
 import type { UserBodyInfo } from './db';
 
 const client = new MastraClient({
-  // baseUrl: import.meta.env.VITE_MASTRA_BACKEND_URL || 'http://localhost:4111',
-  baseUrl: 'http://localhost:4111'
+  baseUrl: import.meta.env.VITE_MASTRA_BACKEND_URL,
 });
 
 export const callBodyAgent = async (userInfo: UserBodyInfo, templateId: string = 'diet-plan') => {
