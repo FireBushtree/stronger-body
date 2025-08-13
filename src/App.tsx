@@ -7,17 +7,11 @@ import GlobalLoading from './components/GlobalLoading'
 import { useLoading } from './contexts/LoadingContext'
 import { UserBodyInfoDB, WeightTrendDB } from './utils/db'
 import type { UserBodyInfo } from './utils/db'
+import { callBodyAgent } from './utils/mastraClient'
 
 function App() {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const { showLoading, hideLoading } = useLoading()
-  useEffect(() => {
-    showLoading()
-
-    setTimeout(() => {
-      hideLoading()
-    }, 5000)
-  }, [])
 
   useEffect(() => {
     // 检查用户是否已完善信息
@@ -44,7 +38,7 @@ function App() {
   };
 
   // 处理用户信息保存
-  const handleUserInfoSave = (userInfo: Partial<UserBodyInfo>) => {
+  const handleUserInfoSave = async (userInfo: Partial<UserBodyInfo>) => {
     const success = UserBodyInfoDB.set(userInfo);
 
     if (success && userInfo.currentWeight) {
@@ -56,6 +50,21 @@ function App() {
         isFasting: true, // 默认认为是空腹体重
         note: '初始体重记录'
       });
+
+      // 调用Body Agent处理用户身体信息
+      try {
+        const fullUserInfo = UserBodyInfoDB.get();
+        if (fullUserInfo) {
+          showLoading()
+          await callBodyAgent(fullUserInfo);
+          console.log('Body Agent called successfully with user info');
+        }
+      } catch (error) {
+        console.error('Failed to call Body Agent:', error);
+        // 不阻断用户流程，只记录错误
+      } finally {
+        hideLoading()
+      }
 
       setShowUserInfoModal(false);
     } else {
