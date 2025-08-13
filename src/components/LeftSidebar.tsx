@@ -1,4 +1,5 @@
 import React from 'react';
+import EmptyState from './EmptyState';
 
 interface DietPlan {
   meal: string;
@@ -67,7 +68,8 @@ const LeftSidebar: React.FC = () => {
           </span>
         </div>
         <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-          {dailyDietPlan.map((meal, index) => (
+          <EmptyState type='list' title='暂无数据' description='AI正在创意中'/>
+          {/* {dailyDietPlan.map((meal, index) => (
             <div key={index} className="bg-gray-900 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-white font-medium">{meal.meal}</h3>
@@ -82,7 +84,7 @@ const LeftSidebar: React.FC = () => {
                 ))}
               </ul>
             </div>
-          ))}
+          ))} */}
         </div>
       </div>
 

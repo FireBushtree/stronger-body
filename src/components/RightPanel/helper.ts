@@ -84,7 +84,6 @@ export const getWeightChartOption = (dates: string[], weights: number[]) => {
         name: '体重',
         type: 'line',
         data: weights,
-        smooth: true,
         lineStyle: {
           color: '#3b82f6',
           width: 3
@@ -233,6 +232,7 @@ export const getNutritionTrendChartOption = () => {
           fontSize: 10
         },
         splitLine: {
+          show: false,
           lineStyle: {
             color: '#374151',
             type: 'dashed'
@@ -242,6 +242,13 @@ export const getNutritionTrendChartOption = () => {
       {
         type: 'value',
         name: '营养素(g)',
+        splitLine: {
+          show: false,
+          lineStyle: {
+            color: '#374151',
+            type: 'dashed'
+          }
+        },
         nameTextStyle: {
           color: '#9ca3af',
           fontSize: 10

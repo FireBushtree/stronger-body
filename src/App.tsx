@@ -3,11 +3,21 @@ import HeaderRow from './components/HeaderRow'
 import LeftSidebar from './components/LeftSidebar'
 import RightPanel from './components/RightPanel'
 import UserInfoModal from './components/UserInfoModal'
+import GlobalLoading from './components/GlobalLoading'
+import { useLoading } from './contexts/LoadingContext'
 import { UserBodyInfoDB, WeightTrendDB } from './utils/db'
 import type { UserBodyInfo } from './utils/db'
 
 function App() {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
+  const { showLoading, hideLoading } = useLoading()
+  useEffect(() => {
+    showLoading()
+
+    setTimeout(() => {
+      hideLoading()
+    }, 5000)
+  }, [])
 
   useEffect(() => {
     // 检查用户是否已完善信息
@@ -36,7 +46,7 @@ function App() {
   // 处理用户信息保存
   const handleUserInfoSave = (userInfo: Partial<UserBodyInfo>) => {
     const success = UserBodyInfoDB.set(userInfo);
-    
+
     if (success && userInfo.currentWeight) {
       // 首次提交时，将当前体重保存到体重趋势中
       const today = new Date().toISOString().split('T')[0];
@@ -46,7 +56,7 @@ function App() {
         isFasting: true, // 默认认为是空腹体重
         note: '初始体重记录'
       });
-      
+
       setShowUserInfoModal(false);
     } else {
       // 可以添加错误提示
@@ -81,6 +91,9 @@ function App() {
         onClose={handleModalClose}
         onSave={handleUserInfoSave}
       />
+
+      {/* 全局Loading组件 */}
+      <GlobalLoading />
     </div>
   )
 }
