@@ -5,13 +5,14 @@ import RightPanel from './components/RightPanel'
 import UserInfoModal from './components/UserInfoModal'
 import GlobalLoading from './components/GlobalLoading'
 import { useLoading } from './contexts/LoadingContext'
-import { UserBodyInfoDB, WeightTrendDB, DietPlanDB } from './utils/db'
-import type { UserBodyInfo, DietPlanData } from './utils/db'
-import { callDietPlanAgent } from './utils/mastraClient'
+import { UserBodyInfoDB, WeightTrendDB, DietPlanDB, WorkoutPlanDB } from './utils/db'
+import type { UserBodyInfo, DietPlanData, WorkoutPlanData } from './utils/db'
+import { callDietPlanAgent, callWorkoutPlanAgent } from './utils/mastraClient'
 
 function App() {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [dietPlan, setDietPlan] = useState<DietPlanData | null>(null);
+  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlanData | null>(null);
   const { showLoading, hideLoading } = useLoading()
 
   useEffect(() => {
@@ -24,8 +25,12 @@ function App() {
     }
 
     // 加载今日饮食计划
-    const todayPlan = DietPlanDB.getTodayPlan();
-    setDietPlan(todayPlan);
+    const todayDietPlan = DietPlanDB.getTodayPlan();
+    setDietPlan(todayDietPlan);
+
+    // 加载今日训练计划
+    const todayWorkoutPlan = WorkoutPlanDB.getTodayPlan();
+    setWorkoutPlan(todayWorkoutPlan);
   }, []);
 
   // 检查用户信息是否完整
@@ -61,17 +66,19 @@ function App() {
         const fullUserInfo = UserBodyInfoDB.get();
         if (fullUserInfo) {
           showLoading();
-          const response = await callDietPlanAgent(fullUserInfo);
+          
+          // 并行调用饮食计划和训练计划agent
+          const [dietResponse, workoutResponse] = await Promise.all([
+            callDietPlanAgent(fullUserInfo),
+            callWorkoutPlanAgent(fullUserInfo)
+          ]);
           
           // 解析AI返回的饮食计划
-          if (response && response.text) {
+          if (dietResponse && dietResponse.text) {
             try {
-              // 尝试从响应中提取JSON
-              const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+              const jsonMatch = dietResponse.text.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 const planData = JSON.parse(jsonMatch[0]);
-                
-                // 保存到数据库
                 const saved = DietPlanDB.setTodayPlan(planData);
                 if (saved) {
                   setDietPlan(DietPlanDB.getTodayPlan());
@@ -80,6 +87,23 @@ function App() {
               }
             } catch (parseError) {
               console.error('解析饮食计划失败:', parseError);
+            }
+          }
+
+          // 解析AI返回的训练计划
+          if (workoutResponse && workoutResponse.text) {
+            try {
+              const jsonMatch = workoutResponse.text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const planData = JSON.parse(jsonMatch[0]);
+                const saved = WorkoutPlanDB.setTodayPlan(planData);
+                if (saved) {
+                  setWorkoutPlan(WorkoutPlanDB.getTodayPlan());
+                  console.log('训练计划生成并保存成功');
+                }
+              }
+            } catch (parseError) {
+              console.error('解析训练计划失败:', parseError);
             }
           }
         }
@@ -114,7 +138,7 @@ function App() {
     <div className="h-screen overflow-y-hidden bg-black text-white flex flex-col">
       <HeaderRow onUserInfoClick={() => setShowUserInfoModal(true)} />
       <div className="flex flex-1 overflow-y-hidden h-0">
-        <LeftSidebar dietPlan={dietPlan} />
+        <LeftSidebar dietPlan={dietPlan} workoutPlan={workoutPlan} />
         <RightPanel />
       </div>
 

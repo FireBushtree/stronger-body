@@ -41,7 +41,8 @@ const STORAGE_KEYS = {
   USER_BODY_INFO: 'stronger-body-user-info',
   WEIGHT_TREND: 'stronger-body-weight-trend',
   NUTRITION_TREND: 'stronger-body-nutrition-trend',
-  DIET_PLAN: 'stronger-body-diet-plan'
+  DIET_PLAN: 'stronger-body-diet-plan',
+  WORKOUT_PLAN: 'stronger-body-workout-plan'
 } as const;
 
 // 工具函数：Map与JSON互相转换
@@ -344,6 +345,93 @@ export class DietPlanDB {
       return true;
     } catch (error) {
       console.error('清除今日饮食计划失败:', error);
+      return false;
+    }
+  }
+}
+
+// 训练计划数据结构
+export interface WorkoutPlanExercise {
+  name: string;
+  duration?: string;
+  description: string;
+  sets?: string;
+  reps?: string;
+  restTime?: string;
+  targetMuscles?: string[];
+}
+
+export interface WorkoutPlanData {
+  warmup: {
+    duration: string;
+    exercises: WorkoutPlanExercise[];
+  };
+  mainWorkout: {
+    duration: string;
+    exercises: WorkoutPlanExercise[];
+  };
+  cooldown: {
+    duration: string;
+    exercises: WorkoutPlanExercise[];
+  };
+  summary: {
+    totalDuration: string;
+    estimatedCaloriesBurned: string;
+    difficulty: string;
+    recommendations: string[];
+  };
+  createdAt: string;
+  date: string;
+}
+
+// 训练计划相关方法
+export class WorkoutPlanDB {
+  // 获取今日训练计划
+  static getTodayPlan(): WorkoutPlanData | null {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const data = localStorage.getItem(STORAGE_KEYS.WORKOUT_PLAN);
+      if (!data) return null;
+
+      const workoutPlan: WorkoutPlanData = JSON.parse(data);
+      // 检查是否是今日的计划
+      if (workoutPlan.date === today) {
+        return workoutPlan;
+      }
+      return null;
+    } catch (error) {
+      console.error('获取今日训练计划失败:', error);
+      return null;
+    }
+  }
+
+  // 保存今日训练计划
+  static setTodayPlan(planData: Omit<WorkoutPlanData, 'createdAt' | 'date'>): boolean {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+
+      const workoutPlan: WorkoutPlanData = {
+        ...planData,
+        date: today,
+        createdAt: now
+      };
+
+      localStorage.setItem(STORAGE_KEYS.WORKOUT_PLAN, JSON.stringify(workoutPlan));
+      return true;
+    } catch (error) {
+      console.error('保存今日训练计划失败:', error);
+      return false;
+    }
+  }
+
+  // 清除今日训练计划
+  static clearTodayPlan(): boolean {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.WORKOUT_PLAN);
+      return true;
+    } catch (error) {
+      console.error('清除今日训练计划失败:', error);
       return false;
     }
   }
