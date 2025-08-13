@@ -53,7 +53,7 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ isOpen, onClose, onSave }
       newErrors.currentWeight = '体重必须在30-300kg之间';
     }
 
-    if (formData.targetWeight && (parseFloat(formData.targetWeight) < 30 || parseFloat(formData.targetWeight) > 300)) {
+    if (!formData.targetWeight || parseFloat(formData.targetWeight) < 30 || parseFloat(formData.targetWeight) > 300) {
       newErrors.targetWeight = '目标体重必须在30-300kg之间';
     }
 
@@ -74,7 +74,7 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ isOpen, onClose, onSave }
       age: parseInt(formData.age),
       currentWeight: parseFloat(formData.currentWeight),
       weeklyWorkIntensity: formData.weeklyWorkIntensity,
-      targetWeight: formData.targetWeight ? parseFloat(formData.targetWeight) : undefined
+      targetWeight: parseFloat(formData.targetWeight)
     };
 
     onSave(userInfo);
@@ -202,7 +202,7 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ isOpen, onClose, onSave }
           {/* 目标体重 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              目标体重 (kg)
+              目标体重 (kg) *
             </label>
             <input
               type="number"
@@ -210,7 +210,7 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ isOpen, onClose, onSave }
               value={formData.targetWeight}
               onChange={(e) => handleInputChange('targetWeight', e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-              placeholder="65.0 (可选)"
+              placeholder="65.0"
               min="30"
               max="300"
             />

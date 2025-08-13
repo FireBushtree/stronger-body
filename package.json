@@ -12,10 +12,13 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@mastra/client-js": "^0.10.21",
+    "@tailwindcss/typography": "^0.5.16",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.2",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import AIChatModal from './AIChatModal';
 
 interface HeaderRowProps {
   onUserInfoClick?: () => void;
 }
 
 const HeaderRow: React.FC<HeaderRowProps> = ({ onUserInfoClick }) => {
+  const [showChatModal, setShowChatModal] = useState(false);
+
   const formatDate = () => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = {
@@ -51,6 +54,7 @@ const HeaderRow: React.FC<HeaderRowProps> = ({ onUserInfoClick }) => {
             <UserIcon className="w-5 h-5" />
           </button>
           <button 
+            onClick={() => setShowChatModal(true)}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
             title="AI助手聊天"
           >
@@ -58,6 +62,12 @@ const HeaderRow: React.FC<HeaderRowProps> = ({ onUserInfoClick }) => {
           </button>
         </div>
       </div>
+
+      {/* AI聊天弹框 */}
+      <AIChatModal
+        isOpen={showChatModal}
+        onClose={() => setShowChatModal(false)}
+      />
     </header>
   );
 };
