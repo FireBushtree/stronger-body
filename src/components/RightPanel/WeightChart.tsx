@@ -35,7 +35,7 @@ const WeightChart: React.FC = () => {
 
   return (
     <div className="flex-1 h-0">
-      <div className="h-full bg-gray-800 p-4 flex flex-col">
+      <div className="h-full p-4 flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-white text-lg font-semibold">空腹体重趋势</h2>
           <div className="flex items-center space-x-3">

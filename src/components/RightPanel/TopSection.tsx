@@ -38,7 +38,7 @@ const TopSection: React.FC = () => {
     // 加载用户实际摄入数据
     const todayIntake = NutritionTrendDB.getTodayRecord();
     setActualIntake(todayIntake);
-    
+
     // 加载AI饮食计划（用于目标值）
     const todayPlan = DietPlanDB.getTodayPlan();
     setDietPlan(todayPlan);
@@ -56,12 +56,12 @@ const TopSection: React.FC = () => {
     setChartKey((prev) => prev + 1);
   };
 
-  // 获取目标营养值 (优先从AI饮食计划获取)
-  const calculateTargetNutrition = () => {
-    // 优先使用AI饮食计划中的目标值
+  // 获取目标营养值 (仅从AI饮食计划获取)
+  const getTargetNutrition = () => {
+    // 只使用AI饮食计划中的目标值
     if (dietPlan && dietPlan.summary) {
       const { totalDailyCalories, dailyNutrients } = dietPlan.summary;
-      
+
       return {
         calories: parseInt(totalDailyCalories.replace(/[^\d]/g, '')) || 0,
         protein: parseFloat(dailyNutrients.protein.replace(/[^\d.]/g, '')) || 0,
@@ -70,45 +70,11 @@ const TopSection: React.FC = () => {
       };
     }
 
-    // 如果没有AI计划，基于用户身体信息的简单估算作为后备
-    const userInfo = UserBodyInfoDB.get();
-    if (!userInfo) {
-      return { calories: 2000, protein: 120, fat: 65, carbs: 250 };
-    }
-
-    // 简单的基础代谢计算和营养目标
-    const { currentWeight, height, age, gender, weeklyWorkIntensity } =
-      userInfo;
-
-    // 基础代谢率 (BMR) 计算
-    let bmr = 0;
-    if (gender === "male") {
-      bmr = 88.362 + 13.397 * currentWeight + 4.799 * height - 5.677 * age;
-    } else {
-      bmr = 447.593 + 9.247 * currentWeight + 3.098 * height - 4.33 * age;
-    }
-
-    // 活动系数
-    const activityFactors = {
-      light: 1.375,
-      moderate: 1.55,
-      heavy: 1.725,
-      "very-heavy": 1.9,
-    };
-
-    const totalCalories = Math.round(
-      bmr * activityFactors[weeklyWorkIntensity]
-    );
-
-    return {
-      calories: totalCalories,
-      protein: Math.round(currentWeight * 1.8), // 1.8g/kg 体重
-      fat: Math.round((totalCalories * 0.25) / 9), // 25% 总热量
-      carbs: Math.round((totalCalories * 0.5) / 4), // 50% 总热量
-    };
+    // 如果没有AI计划，返回null表示没有目标数据
+    return null;
   };
 
-  const targetNutrition = calculateTargetNutrition();
+  const targetNutrition = getTargetNutrition();
 
   // 获取当前营养数据（仅显示用户实际摄入）
   const getCurrentNutrition = () => {
@@ -135,7 +101,8 @@ const TopSection: React.FC = () => {
 
   const currentNutrition = getCurrentNutrition();
 
-  const nutritionData: NutritionCard[] = [
+  // 只有在有目标营养数据时才构建nutritionData
+  const nutritionData: NutritionCard[] | null = targetNutrition ? [
     {
       title: "总卡路里",
       value: currentNutrition.calories,
@@ -172,7 +139,7 @@ const TopSection: React.FC = () => {
       color: "text-green-400",
       bgColor: "bg-green-500/10 border-green-500/20",
     },
-  ];
+  ] : null;
 
   const calculateProgress = (current: number, target: number) => {
     return Math.min((current / target) * 100, 100);
@@ -212,58 +179,69 @@ const TopSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 flex-1">
-          {nutritionData.map((item, index) => {
-            const IconComponent = item.icon;
-            const progress = calculateProgress(item.value, item.target);
+        {/* 显示营养数据或空状态 */}
+        {nutritionData && nutritionData.length > 0 ? (
+          <div className="grid grid-cols-4 gap-4 flex-1">
+            {nutritionData.map((item, index) => {
+              const IconComponent = item.icon;
+              const progress = calculateProgress(item.value, item.target);
 
-            return (
-              <div
-                key={index}
-                className={`${item.bgColor} border rounded-lg p-4 flex flex-col justify-between`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <IconComponent className={`w-6 h-6 ${item.color}`} />
-                  <span className="text-gray-400 text-xs">{item.title}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-end space-x-1">
-                    <span className="text-white text-2xl font-bold">
-                      {item.value}
-                    </span>
-                    <span className="text-gray-400 text-sm">{item.unit}</span>
+              return (
+                <div
+                  key={index}
+                  className={`${item.bgColor} border rounded-lg p-4 flex flex-col justify-between`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <IconComponent className={`w-6 h-6 ${item.color}`} />
+                    <span className="text-gray-400 text-xs">{item.title}</span>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>{progress.toFixed(0)}%</span>
-                      <span>
-                        目标: {item.target}
-                        {item.unit}
+                  <div className="space-y-2">
+                    <div className="flex items-end space-x-1">
+                      <span className="text-white text-2xl font-bold">
+                        {item.value}
                       </span>
+                      <span className="text-gray-400 text-sm">{item.unit}</span>
                     </div>
 
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          item.color.includes("orange")
-                            ? "bg-orange-400"
-                            : item.color.includes("blue")
-                            ? "bg-blue-400"
-                            : item.color.includes("yellow")
-                            ? "bg-yellow-400"
-                            : "bg-green-400"
-                        }`}
-                        style={{ width: `${progress}%` }}
-                      ></div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>{progress.toFixed(0)}%</span>
+                        <span>
+                          目标: {item.target}
+                          {item.unit}
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            item.color.includes("orange")
+                              ? "bg-orange-400"
+                              : item.color.includes("blue")
+                              ? "bg-blue-400"
+                              : item.color.includes("yellow")
+                              ? "bg-yellow-400"
+                              : "bg-green-400"
+                          }`}
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <div className="text-6xl mb-4">🍽️</div>
+              <div className="text-lg mb-2">暂无营养数据</div>
+              <div className="text-sm mb-3">AI正在为您生成个性化饮食计划，请稍候...</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 营养摄入趋势图 */}
