@@ -1,13 +1,13 @@
-import { WeightTrendDB, UserBodyInfoDB, NutritionTrendDB } from '../../utils/db';
+import { WeightTrendDB, NutritionTrendDB } from '../../utils/db';
 
 // 生成体重数据的辅助函数
 export const generateWeightData = () => {
   const dates: string[] = [];
   const weights: number[] = [];
-  
+
   // 获取真实的体重数据
   const weightMap = WeightTrendDB.get();
-  
+
   // 只显示用户实际输入的空腹体重记录
   const records: Array<[string, any]> = Array.from(weightMap.entries())
     .filter(([_, record]) => record.isFasting) // 只显示空腹测量的数据
@@ -151,10 +151,10 @@ export const generateNutritionTrendData = () => {
   // 获取最近7天的日期范围
   const endDate = today.toISOString().split('T')[0];
   const startDate = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  
+
   // 获取真实的营养数据
   const nutritionRecords = NutritionTrendDB.getDateRange(startDate, endDate);
-  
+
   // 创建日期到记录的映射
   const recordMap = new Map();
   nutritionRecords.forEach(record => {
@@ -166,7 +166,7 @@ export const generateNutritionTrendData = () => {
     const date = new Date(today);
     date.setDate(today.getDate() - i);
     const dateString = date.toISOString().split('T')[0];
-    
+
     dates.push(date.toLocaleDateString('zh-CN', { weekday: 'short', month: 'short', day: 'numeric' }));
 
     // 使用真实数据或0（如果没有记录）

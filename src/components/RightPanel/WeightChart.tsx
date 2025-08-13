@@ -3,11 +3,14 @@ import ReactECharts from 'echarts-for-react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { generateWeightData, getWeightChartOption } from './helper';
 import WeightRecordModal from '../WeightRecordModal';
+import { useUserInfo } from '../../contexts/UserInfoContext';
 
 const WeightChart: React.FC = () => {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [chartData, setChartData] = useState(() => generateWeightData());
-  
+  const [chartKey, setChartKey] = useState(0);
+  const { userInfo } = useUserInfo();
+
   const { dates, weights } = chartData;
   const option = getWeightChartOption(dates, weights);
 
@@ -17,12 +20,18 @@ const WeightChart: React.FC = () => {
   // 刷新图表数据
   const refreshChartData = () => {
     setChartData(generateWeightData());
+    setChartKey(prev => prev + 1);
   };
 
   // 处理保存体重记录
   const handleWeightSave = () => {
     refreshChartData();
   };
+
+  // 监听用户信息变化，当用户信息更新时刷新图表
+  useEffect(() => {
+    refreshChartData();
+  }, [userInfo]);
 
   return (
     <div className="flex-1 h-0">
@@ -45,6 +54,7 @@ const WeightChart: React.FC = () => {
         <div className="flex-1">
           {weights.length > 0 ? (
             <ReactECharts
+              key={chartKey}
               option={option}
               style={{ height: '100%', width: '100%' }}
               opts={{ renderer: 'canvas' }}

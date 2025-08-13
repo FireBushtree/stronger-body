@@ -5,20 +5,21 @@ import RightPanel from './components/RightPanel'
 import UserInfoModal from './components/UserInfoModal'
 import GlobalLoading from './components/GlobalLoading'
 import { useLoading } from './contexts/LoadingContext'
-import { UserBodyInfoDB, WeightTrendDB, DietPlanDB, WorkoutPlanDB } from './utils/db'
+import { UserInfoProvider, useUserInfo } from './contexts/UserInfoContext'
+import { WeightTrendDB, DietPlanDB, WorkoutPlanDB } from './utils/db'
 import type { UserBodyInfo, DietPlanData, WorkoutPlanData } from './utils/db'
 import { callDietPlanAgent, callWorkoutPlanAgent } from './utils/mastraClient'
 
-function App() {
+// 应用主要内容组件
+const AppContent: React.FC = () => {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [dietPlan, setDietPlan] = useState<DietPlanData | null>(null);
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlanData | null>(null);
-  const { showLoading, hideLoading } = useLoading()
+  const { showLoading, hideLoading } = useLoading();
+  const { userInfo, updateUserInfo, isUserInfoComplete } = useUserInfo();
 
   useEffect(() => {
-    // 检查用户是否已完善信息
-    const userInfo = UserBodyInfoDB.get();
-
+    console.log(!userInfo, !isUserInfoComplete(userInfo))
     // 如果没有用户信息，或者用户信息不完整，显示弹框
     if (!userInfo || !isUserInfoComplete(userInfo)) {
       setShowUserInfoModal(true);
@@ -31,48 +32,34 @@ function App() {
     // 加载今日训练计划
     const todayWorkoutPlan = WorkoutPlanDB.getTodayPlan();
     setWorkoutPlan(todayWorkoutPlan);
-  }, []);
+  }, [userInfo, isUserInfoComplete]);
 
-  // 检查用户信息是否完整
-  const isUserInfoComplete = (userInfo: UserBodyInfo): boolean => {
-    return !!(
-      userInfo.height &&
-      userInfo.gender &&
-      userInfo.age &&
-      userInfo.currentWeight &&
-      userInfo.weeklyWorkIntensity &&
-      userInfo.height > 0 &&
-      userInfo.age > 0 &&
-      userInfo.currentWeight > 0
-    );
-  };
 
   // 处理用户信息保存
-  const handleUserInfoSave = async (userInfo: Partial<UserBodyInfo>) => {
-    const success = UserBodyInfoDB.set(userInfo);
+  const handleUserInfoSave = async (newUserInfo: Partial<UserBodyInfo>) => {
+    const success = updateUserInfo(newUserInfo);
 
-    if (success && userInfo.currentWeight) {
+    if (success) {
       // 首次提交时，将当前体重保存到体重趋势中
       const today = new Date().toISOString().split('T')[0];
       WeightTrendDB.addRecord({
         date: today,
-        weight: userInfo.currentWeight,
+        weight: newUserInfo.currentWeight,
         isFasting: true, // 默认认为是空腹体重
         note: '初始体重记录'
       });
 
       // 调用Body Agent处理用户身体信息
       try {
-        const fullUserInfo = UserBodyInfoDB.get();
-        if (fullUserInfo) {
+        if (userInfo) {
           showLoading();
-          
+
           // 并行调用饮食计划和训练计划agent
           const [dietResponse, workoutResponse] = await Promise.all([
-            callDietPlanAgent(fullUserInfo),
-            callWorkoutPlanAgent(fullUserInfo)
+            callDietPlanAgent(userInfo),
+            callWorkoutPlanAgent(userInfo)
           ]);
-          
+
           // 解析AI返回的饮食计划
           if (dietResponse && dietResponse.text) {
             try {
@@ -123,7 +110,6 @@ function App() {
 
   // 处理弹框关闭
   const handleModalClose = () => {
-    const userInfo = UserBodyInfoDB.get();
     // 如果是首次使用（没有完整信息），则不允许关闭
     // 如果是修改信息（已有完整信息），则允许关闭
     if (userInfo && isUserInfoComplete(userInfo)) {
@@ -152,7 +138,16 @@ function App() {
       {/* 全局Loading组件 */}
       <GlobalLoading />
     </div>
-  )
+  );
+};
+
+// 主App组件，包装Context Provider
+function App() {
+  return (
+    <UserInfoProvider>
+      <AppContent />
+    </UserInfoProvider>
+  );
 }
 
 export default App
