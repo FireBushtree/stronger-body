@@ -2,10 +2,14 @@ import React from 'react';
 import TopSection from './TopSection';
 import WeightChart from './WeightChart';
 
-const RightPanel: React.FC = () => {
+interface RightPanelProps {
+  isLoadingNutrition?: boolean;
+}
+
+const RightPanel: React.FC<RightPanelProps> = ({ isLoadingNutrition = false }) => {
   return (
     <div className="flex-1 bg-gray-900 flex flex-col h-full">
-      <TopSection />
+      <TopSection isLoadingNutrition={isLoadingNutrition} />
       <WeightChart />
     </div>
   );

@@ -1,14 +1,22 @@
 import React from 'react';
 import EmptyState from './EmptyState';
+import { DietPlanSkeleton, WorkoutPlanSkeleton } from './SkeletonLoaders';
 import type { DietPlanData, WorkoutPlanData } from '../utils/db';
 
 
 interface LeftSidebarProps {
   dietPlan: DietPlanData | null;
   workoutPlan: WorkoutPlanData | null;
+  isLoadingDietPlan?: boolean;
+  isLoadingWorkoutPlan?: boolean;
 }
 
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ dietPlan, workoutPlan }) => {
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ 
+  dietPlan, 
+  workoutPlan, 
+  isLoadingDietPlan = false, 
+  isLoadingWorkoutPlan = false 
+}) => {
 
   return (
     <aside className="w-1/4 bg-gray-800 border-r border-gray-700 flex flex-col h-full">
@@ -21,7 +29,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ dietPlan, workoutPlan }) => {
           </span>
         </div>
         <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-          {!dietPlan ? (
+          {isLoadingDietPlan ? (
+            <DietPlanSkeleton />
+          ) : !dietPlan ? (
             <EmptyState type='list' title='暂无数据' description='完善个人信息后AI将生成饮食计划'/>
           ) : (
             <>
@@ -98,7 +108,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ dietPlan, workoutPlan }) => {
           </span>
         </div>
         <div className="space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-          {!workoutPlan ? (
+          {isLoadingWorkoutPlan ? (
+            <WorkoutPlanSkeleton />
+          ) : !workoutPlan ? (
             <EmptyState type='list' title='暂无数据' description='完善个人信息后AI将生成训练计划'/>
           ) : (
             <>

@@ -18,6 +18,8 @@ const AppContent: React.FC = () => {
   const { showLoading, hideLoading } = useLoading();
   const { userInfo, updateUserInfo, isUserInfoComplete } = useUserInfo();
   const [rightPanelKey, setRightPanelKey] = useState(0);
+  const [isLoadingDietPlan, setIsLoadingDietPlan] = useState(false);
+  const [isLoadingWorkoutPlan, setIsLoadingWorkoutPlan] = useState(false);
 
   useEffect(() => {
     // 如果没有用户信息，或者用户信息不完整，显示弹框
@@ -49,55 +51,67 @@ const AppContent: React.FC = () => {
       });
 
       // 调用Body Agent处理用户身体信息
-      try {
-        showLoading();
-
-        // 并行调用饮食计划和训练计划agent
-        const [dietResponse, workoutResponse] = await Promise.all([
-          callDietPlanAgent(newUserInfo),
-          callWorkoutPlanAgent(newUserInfo),
-        ]);
-
-        // 解析AI返回的饮食计划
-        if (dietResponse && dietResponse.text) {
-          try {
-            const jsonMatch = dietResponse.text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const planData = JSON.parse(jsonMatch[0]);
-              const saved = DietPlanDB.setTodayPlan(planData);
-              if (saved) {
-                setDietPlan(DietPlanDB.getTodayPlan());
-                console.log("饮食计划生成并保存成功");
+      // 独立调用饮食计划agent
+      const callDietPlan = async () => {
+        try {
+          setIsLoadingDietPlan(true);
+          const dietResponse = await callDietPlanAgent(newUserInfo);
+          
+          if (dietResponse && dietResponse.text) {
+            try {
+              const jsonMatch = dietResponse.text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const planData = JSON.parse(jsonMatch[0]);
+                const saved = DietPlanDB.setTodayPlan(planData);
+                if (saved) {
+                  setDietPlan(DietPlanDB.getTodayPlan());
+                  console.log("饮食计划生成并保存成功");
+                }
               }
+            } catch (parseError) {
+              console.error("解析饮食计划失败:", parseError);
             }
-          } catch (parseError) {
-            console.error("解析饮食计划失败:", parseError);
           }
+        } catch (error) {
+          console.error("Failed to call Diet Plan Agent:", error);
+        } finally {
+          setIsLoadingDietPlan(false);
         }
+      };
 
-        // 解析AI返回的训练计划
-        if (workoutResponse && workoutResponse.text) {
-          try {
-            const jsonMatch = workoutResponse.text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const planData = JSON.parse(jsonMatch[0]);
-              const saved = WorkoutPlanDB.setTodayPlan(planData);
-              if (saved) {
-                setWorkoutPlan(WorkoutPlanDB.getTodayPlan());
-                console.log("训练计划生成并保存成功");
+      // 独立调用训练计划agent
+      const callWorkoutPlan = async () => {
+        try {
+          setIsLoadingWorkoutPlan(true);
+          const workoutResponse = await callWorkoutPlanAgent(newUserInfo);
+          
+          if (workoutResponse && workoutResponse.text) {
+            try {
+              const jsonMatch = workoutResponse.text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const planData = JSON.parse(jsonMatch[0]);
+                const saved = WorkoutPlanDB.setTodayPlan(planData);
+                if (saved) {
+                  setWorkoutPlan(WorkoutPlanDB.getTodayPlan());
+                  console.log("训练计划生成并保存成功");
+                }
               }
+            } catch (parseError) {
+              console.error("解析训练计划失败:", parseError);
             }
-          } catch (parseError) {
-            console.error("解析训练计划失败:", parseError);
           }
+        } catch (error) {
+          console.error("Failed to call Workout Plan Agent:", error);
+        } finally {
+          setIsLoadingWorkoutPlan(false);
         }
-      } catch (error) {
-        console.error("Failed to call Body Agent:", error);
-        // 不阻断用户流程，只记录错误
-      } finally {
-        hideLoading();
-        setRightPanelKey((prev) => prev + 1);
-      }
+      };
+
+      // 并发执行但不等待
+      callDietPlan();
+      callWorkoutPlan();
+      
+      setRightPanelKey((prev) => prev + 1);
 
       setShowUserInfoModal(false);
     } else {
@@ -122,8 +136,16 @@ const AppContent: React.FC = () => {
     <div className="h-screen overflow-y-hidden bg-black text-white flex flex-col">
       <HeaderRow onUserInfoClick={() => setShowUserInfoModal(true)} />
       <div className="flex flex-1 overflow-y-hidden h-0">
-        <LeftSidebar dietPlan={dietPlan} workoutPlan={workoutPlan} />
-        <RightPanel key={rightPanelKey} />
+        <LeftSidebar 
+          dietPlan={dietPlan} 
+          workoutPlan={workoutPlan} 
+          isLoadingDietPlan={isLoadingDietPlan}
+          isLoadingWorkoutPlan={isLoadingWorkoutPlan}
+        />
+        <RightPanel 
+          key={rightPanelKey} 
+          isLoadingNutrition={isLoadingDietPlan}
+        />
       </div>
 
       {/* 用户信息弹框 */}

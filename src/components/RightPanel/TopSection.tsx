@@ -13,6 +13,7 @@ import { UserBodyInfoDB, NutritionTrendDB, DietPlanDB } from "../../utils/db";
 import type { NutritionRecord, DietPlanData } from "../../utils/db";
 import FoodIntakeModal from "../FoodIntakeModal";
 import FoodRecordsModal from "../FoodRecordsModal";
+import { NutritionCardsSkeleton } from "../SkeletonLoaders";
 
 interface NutritionCard {
   title: string;
@@ -24,7 +25,11 @@ interface NutritionCard {
   bgColor: string;
 }
 
-const TopSection: React.FC = () => {
+interface TopSectionProps {
+  isLoadingNutrition?: boolean;
+}
+
+const TopSection: React.FC<TopSectionProps> = ({ isLoadingNutrition = false }) => {
   const [actualIntake, setActualIntake] = useState<NutritionRecord | null>(
     null
   );
@@ -180,7 +185,9 @@ const TopSection: React.FC = () => {
         </div>
 
         {/* 显示营养数据或空状态 */}
-        {nutritionData && nutritionData.length > 0 ? (
+        {isLoadingNutrition ? (
+          <NutritionCardsSkeleton />
+        ) : nutritionData && nutritionData.length > 0 ? (
           <div className="grid grid-cols-4 gap-4 flex-1">
             {nutritionData.map((item, index) => {
               const IconComponent = item.icon;
