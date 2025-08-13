@@ -1,19 +1,30 @@
+import { WeightTrendDB, UserBodyInfoDB } from '../../utils/db';
+
 // 生成体重数据的辅助函数
 export const generateWeightData = () => {
-  const dates = [];
-  const weights = [];
-  const today = new Date();
+  const dates: string[] = [];
+  const weights: number[] = [];
+  
+  // 获取真实的体重数据
+  const weightMap = WeightTrendDB.get();
+  
+  // 只显示用户实际输入的空腹体重记录
+  const records: Array<[string, any]> = Array.from(weightMap.entries())
+    .filter(([_, record]) => record.isFasting) // 只显示空腹测量的数据
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB)); // 按日期排序
 
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    dates.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
-
-    // 模拟体重数据，基础体重70kg，随机波动
-    const baseWeight = 70;
-    const variation = Math.sin(i / 5) * 1.5 + Math.random() * 0.8 - 0.4;
-    weights.push(Number((baseWeight + variation).toFixed(1)));
+  if (records.length === 0) {
+    // 如果没有任何记录，返回空数据
+    return { dates: [], weights: [] };
   }
+
+  // 转换数据格式
+  records.forEach(([dateStr, record]) => {
+    const date = new Date(dateStr);
+    const displayDate = date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    dates.push(displayDate);
+    weights.push(record.weight);
+  });
 
   return { dates, weights };
 };
