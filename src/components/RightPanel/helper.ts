@@ -232,7 +232,6 @@ export const getNutritionTrendChartOption = () => {
           fontSize: 10
         },
         splitLine: {
-          show: false,
           lineStyle: {
             color: '#374151',
             type: 'dashed'
@@ -243,9 +242,8 @@ export const getNutritionTrendChartOption = () => {
         type: 'value',
         name: '营养素(g)',
         splitLine: {
-          show: false,
           lineStyle: {
-            color: '#374151',
+            color: '#ccc',
             type: 'dashed'
           }
         },
